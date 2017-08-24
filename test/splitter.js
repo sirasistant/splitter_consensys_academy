@@ -47,7 +47,11 @@ contract('Splitter', function (accounts) {
     var accountsToSplit = [accounts[1], accounts[2]];
     var balances = [];
     var amountToSend = 100;
-    return instance.kill({ from: accounts[0] })
+    return instance.kill({ from: accounts[0] }).then(()=>{
+      return web3.eth.getCode(instance.address);
+    }).then((code)=>{
+      assert.equal(code,"0x0","Did not kill itself");
+    })
   });
 
 
