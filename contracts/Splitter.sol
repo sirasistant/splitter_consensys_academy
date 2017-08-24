@@ -1,17 +1,38 @@
 pragma solidity ^0.4.6;
 
-contract Splitter {
+contract Wallet{
+    event LogMoneyAdded(address account, uint amount);
+    event LogWithdraw(address account, uint amount);
+    
+    mapping(address=>uint) public balances;
+    
+    function withdraw()
+    public
+    returns(bool success){
+        require(balances[msg.sender]>0);
+        uint amount =  balances[msg.sender];
+        balances[msg.sender]=0;
+        msg.sender.transfer(amount);
+        LogWithdraw(msg.sender, amount);
+        return true;
+    }
+    
+    function addMoney(address account, uint amount)
+    internal{
+        balances[account] += amount;
+        LogMoneyAdded(account,amount);
+    }
+}
+
+contract Splitter is Wallet{
     address public owner;
     
     event LogRegister(address sender,address receiver1,address receiver2);
     event LogSplit(uint amount,address sender,address receiver1,address receiver2);
-    event LogWithdraw(uint amount,address beneficiary);
     
     struct Split{
         address[2] accounts;
     }
-    
-    mapping(address=> uint) balances;
     
     mapping(address=> Split) splitters;
     
@@ -44,29 +65,9 @@ contract Splitter {
     returns (bool success){
         assert(msg.value>1 && msg.value%2==0);
         assert(splitters[msg.sender].accounts[0]!= address(0)&&splitters[msg.sender].accounts[1]!= address(0));
-        balances[splitters[msg.sender].accounts[0]]+=(msg.value/2);
-         balances[splitters[msg.sender].accounts[1]]+=(msg.value/2);
+        addMoney(splitters[msg.sender].accounts[0],msg.value/2);
+        addMoney(splitters[msg.sender].accounts[1],msg.value/2);
         LogSplit(msg.value,msg.sender, splitters[msg.sender].accounts[0],splitters[msg.sender].accounts[1]);
-        return true;
-    }
-    
-    function balanceOf(address target)
-    public
-    constant
-    returns (uint amount){
-        return balances[target];
-    }
-    
-    function withdraw()
-    public 
-    returns(bool success){
-        uint amount = balances[msg.sender];
-       
-        assert(amount>0);
-        
-        balances[msg.sender] = 0;
-        LogWithdraw(amount,msg.sender);
-        msg.sender.transfer(amount);
         return true;
     }
     
